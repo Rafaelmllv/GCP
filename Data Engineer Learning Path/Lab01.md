@@ -39,3 +39,17 @@ Crie uma consulta que indique a duração média dos voos partindo do aeroporto 
 
 ### Segunda consulta
 Crie uma consulta que indique a duração média dos voos partindo do aeroporto Heathrow de Londres, Reino Unido (LHR), com destino ao de Kuala Lumpur, Malásia (KUL). Agrupe os resultados por companhia aérea, ordenados do menor para o maior. As durações médias encontradas indicarão se a companhia aérea PlanePeople Air cumpriu a promessa de usar aviões mais rápidos no aeroporto de Heathrow.
+
+## Solução
+
+Já logado na GCP com o usuário e senha fornecido no lab, abrir o BigQuery.
+ 
+1) Adicionar Dados no botão **+ ADD DATA** utilizando a fonte como **Google Cloud Storage**
+
+2) Realizar a [Query 1]("lab1-consulta1.sql
+
+![Query 1]("Query01.png")
+
+3) Realizar a [Query 2]("lab1-consulta2.sql")
+
+![Query 1]("Query02.png")
