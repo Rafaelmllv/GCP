@@ -15,13 +15,13 @@ Conhecimentos avaliados
 
 
 ## Tarefa 1: crie um conjunto de dados personalizado
-[] Crie um conjunto de dados personalizado no BigQuery chamado JasmineJasper.
+- [x] Crie um conjunto de dados personalizado no BigQuery chamado JasmineJasper.
 
-[] Crie uma tabela chamada triplog no conjunto de dados.
+- [x] Crie uma tabela chamada triplog no conjunto de dados.
 
-[] Carregue os dados de origem na tabela.
+- [x] Carregue os dados de origem na tabela.
 
-[] O arquivo de registros está no formato CSV. Ele foi compartilhado com você em um bucket do Cloud Storage: cloud-training/preppde/2018-JasperJasmineMines.csv
+- [x] O arquivo de registros está no formato CSV. Ele foi compartilhado com você em um bucket do Cloud Storage: cloud-training/preppde/2018-JasperJasmineMines.csv
 
 Use o seguinte **esquema**:
 
@@ -46,10 +46,12 @@ Já logado na GCP com o usuário e senha fornecido no lab, abrir o BigQuery.
  
 1) Adicionar Dados no botão **+ ADD DATA** utilizando a fonte como **Google Cloud Storage**
 
-2) Realizar a [Query 1]("lab1-consulta1.sql
+![Criação do Dataset](Cria%C3%A7%C3%A3o%20do%20Dataset.png)
+
+2) Realizar a [Query 1](lab1-consulta1.sql)
 
 ![Query 1](Query01.png)
 
-3) Realizar a [Query 2]("lab1-consulta2.sql")
+3) Realizar a [Query 2](lab1-consulta2.sql)
 
 ![Query 1](Query02.png)
