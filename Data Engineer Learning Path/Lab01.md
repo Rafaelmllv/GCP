@@ -48,8 +48,8 @@ Já logado na GCP com o usuário e senha fornecido no lab, abrir o BigQuery.
 
 2) Realizar a [Query 1]("lab1-consulta1.sql
 
-![Query 1]("Query01.png")
+![Query 1](Query01.png)
 
 3) Realizar a [Query 2]("lab1-consulta2.sql")
 
-![Query 1]("Query02.png")
+![Query 1](Query02.png)
