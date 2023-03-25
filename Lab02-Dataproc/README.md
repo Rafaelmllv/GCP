@@ -70,3 +70,5 @@ O job de referência será concluído no tempo necessário (menos de 75 segundos
 ## Solução:
 
 ### Tarefa 1:
+
+Criação do bucket 
