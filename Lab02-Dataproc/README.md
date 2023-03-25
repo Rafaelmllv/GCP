@@ -68,7 +68,137 @@ Quando os nós adicionais estiverem em execução, envie o job novamente. Envie 
 O job de referência será concluído no tempo necessário (menos de 75 segundos).
 
 ## Solução:
+Como fiz o LAB passado interamente no console, vou fazer algumas partes desses usando CLI no próprio CloudShell.
+
 
 ### Tarefa 1:
 
-Criação do bucket 
+Criação do bucket:
+
+![Console](cria-bucket.jpg)
+
+OU 
+
+Usando o Cloud Shell:
+
+`gcloud storage buckets create gs://qwiklabs-gcp-03-0ceda934371e`
+
+
+Copiar o arquivo para o bucket criado:
+
+`gsutil cp gs://cloud-training/preppde/benchmark.py gs://qwiklabs-gcp-03-0ceda934371e/`
+
+
+
+
+### Tarefa 2:
+
+(Apesar da descrição, o sistema de correção do GCP pede para criar na região 'us-east1')
+
+No **Dataproc** > Create cluster > On Compute Engine
+
+Cluster name: mjtelco
+region: us-east1 (**REGIÃO CORRETA**)
+Zone: us-east-c (default)
+
+**configure nodes**
+MANAGER NODE
+
+Series: N1
+Machine Type: n1-standard-2
+
+WORKERS NODE
+
+Series: N1
+Machine Type: n1-standard-2
+
+**Customise Cluster**
+
+Storage Staggin bucket: qwiklabs-gcp-03-0ceda934371e
+
+OR EQUIVALENT COMMAND LINE:
+
+`gcloud dataproc clusters create mjtelco --bucket qwiklabs-gcp-03-0ceda934371e --region us-east1 --zone us-east1-c --master-machine-type n1-standard-2 --master-boot-disk-size 500 --num-workers 2 --worker-machine-type n1-standard-2 --worker-boot-disk-size 500 --image-version 2.0-debian10 --project qwiklabs-gcp-03-0ceda934371e`
+
+Cluster Criado:
+
+![Cluster](cria-cluster.jpg)
+
+### Tarefa 3:
+
+Entrar no Cluster **mjtelco** e **(+) Submit job** com os parâmetros indicados:
+
+Job ID: mjtelco-test-1
+
+Job Type: PySpark
+
+Main Python File: gs://qwiklabs-gcp-03-0ceda934371e/benchmark.py
+
+Arguments: 20
+
+Max Restart Per hour: 1
+
+**SUBMIT** 
+
+### Tarefa 4:
+**(+) Submit job** com os parâmetros:
+
+Job ID: mjtelco-test-2
+
+Job Type: PySpark
+
+Main Python File: gs://qwiklabs-gcp-03-0ceda934371e/benchmark.py
+
+Arguments: 220
+
+Max Restart Per hour: 1
+
+
+### Tarefa 5:
+Upgrade do Cluster:
+
+gcloud dataproc clusters delete mjtelco --region=us-east1
+
+
+Recriar com o Master Node com 4 CPUs:
+
+`gcloud dataproc clusters create mjtelco --bucket qwiklabs-gcp-03-0ceda934371e --region us-east1 --zone us-east1-c --master-machine-type n1-standard-4 --master-boot-disk-size 500 --num-workers 2 --worker-machine-type n1-standard-2 --worker-boot-disk-size 500 --image-version 2.0-debian10 --project qwiklabs-gcp-03-0ceda934371e`
+
+## Tarefa 6:
+
+Job ID: mjtelco-test-3
+
+Job Type: PySpark
+
+Main Python File: gs://qwiklabs-gcp-03-0ceda934371e/benchmark.py
+
+Arguments: 220
+
+Max Restart Per hour: 1
+
+mjtelco-test-3
+
+### Tarefa 7: 
+
+Ampliar o número de Workers Node para 5
+
+gcloud dataproc clusters update mjtelco --region=us-east1 --num-workers=5
+
+### Tarefa 8:
+
+Job ID: mjtelco-test-4
+
+Job Type: PySpark
+
+Main Python File: gs://qwiklabs-gcp-03-0ceda934371e/benchmark.py
+
+Arguments: 220
+
+Max Restart Per hour: 1
+
+
+## Observações finais
+
+Laboratório concluído, mas o teste 3, apesar de usar um mananger node mais potente ainda demorou um pouco mais do que o teste 2. Por outro lado o teste 4 teve o tempo significativamente reduzido, atendendo ao requisito proposto.
+
+![](compara-jobs.jpg)
