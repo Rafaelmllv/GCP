@@ -184,3 +184,156 @@ O DistCp é uma ferramenta essencial para mover dados. Recomendamos usar um mode
 - Protótipos e comparações com dados e jobs reais é para estimar a alocação de VMs, que podem ser redimendionados conforme necessidade do escopo do job.
 
 ## Otimizar o Armazenamento do Dataproc
+
+
+
+Em algumas condições o HDFS local tem vantagem:
+
+- Os jobs exigem muitas operações de metadados. Ex: milhares de partições e diretórios, com tamanho de arquivo pequeno.
+
+- Dados do HDFS modificados com frequência ou renomeação de diretórios. Os objetos do Cloud Storage são imutáveis e renomear um diretório é algo trabalhoso porque consiste em copiar todos os objetos para uma nova chave e excluí-los posteriormente. 
+
+- Você usa muito a operação de acréscimo(append) em arquivos HDFS. 
+
+- As cargas de trabalho envolvem I/O pesado. Ex: muitas gravações particionadas.
+
+- Cargas de trabalho de I/O especialmente sensíveis à latência. Ex: você precisa de latência de um dígito e milissegundos por operação de armazenamento.
+
+
+
+Em geral, recomenda-se usar o Cloud Storage como fonte de dados **inicial e final** em um pipeline de Big Data. 
+	- Ex: se um fluxo de trabalho contém cinco jobs do Spark em série, o primeiro job recupera os dados iniciais do Cloud Storage e grava os dados aleatórios e a saída do job intermediário no HDFS. O job final do Spark grava os resultados no Cloud Storage. 
+
+
+Dataproc + Cloud Storage permite reduzir os requisitos de disco e economizar custos colocando seus dados lá em vez de no HDFS. -->  discos menores para o cluster.
+Separar o armazenamento e a computação reduz bastante os custos.
+OBS: Mesmo com o armazenamento de dados no Cloud Storage, o cluster do Dataproc precisa de HDFS para determinadas operações, como armazenamento de arquivos de controle e recuperação ou agregação de registros. Ele também precisa de espaço em disco local não HDFS para o embaralhamento.
+
+Você pode reduzir o tamanho do disco por worker se não usar muito o HDFS local.
+
+**Opções para ajustar o tamanho do HDFS local**: 
+
+- Diminua o tamanho total do HDFS local diminuindo o tamanho dos discos permanentes primários do primário e dos workers. 
+
+	O disco permanente primário contém o volume de inicialização e as bibliotecas do sistema, portanto, aloque pelo menos 100 gigabytes.
+
+- Aumente o tamanho total do HDFS local aumentando o tamanho do disco permanente primário para workers. 
+	Considere esta opção com cuidado. É raro ter cargas de trabalho com melhor desempenho usando HDFS com discos permanentes padrão em comparação com o uso do Cloud Storage ou HDFS local com SSD. Anexe até oito SSDs a cada worker e use esses discos para o HDFS. Essa é uma boa opção se você precisa usar o HDFS para cargas com muitas E/Ss e precisa de latência de um dígito de milissegundos. Use um tipo de máquina que tenha CPUs e memória no worker para comportar os discos E use discos permanentes SSD para seu primário ou workers como um disco primário.
+	
+- Impacto da geografia e das regiões nos dados e jobs.
+
+	A latência das solicitações pode aumentar quando elas são feitas de uma região diferente daquela onde os recursos estão armazenados.
+	Além disso, se os recursos dos serviços e seus dados permanentes estiverem em regiões diferentes, chamadas para serviços do Google Cloud poderão copiar todos os dados necessários de uma zona para outra antes do processamento (!!!). Isso pode ter um impacto severo no desempenho.
+	
+
+Além do armazenamento no Cloud Storage, alguns dados podem ser mais adequados para armazenamento em produtos projetados explicitamente para Big Data:
+
+- Cloud Bigtable para armazenar muitos dados **esparsos** - API compatível com HBase que oferece baixa latência e alta escalonabilidade para se adaptar aos seus jobs. 
+- BigQuery para Datawharehouse. 
+
+- Replicar um cluster local do Hadoop em um cluster permanente do Dataproc, apesar de parecer a solução mais fácil **não é uma boa ideia**:
+
+- Manter seus dados em um cluster HDFS permanente usando o Dataproc é mais caro do que armazenar seus dados no Cloud Storage
+
+- Limita a integração com outros serviços do Google Cloud
+
+**modelo efêmero**: Clusters pequenos, de curta duração e projetados para jobs específicos, ao invés de um grande cluster permanente e  multifuncional.
+
+Usar um único cluster permanente do Dataproc para seus jobs é mais difícil de gerenciar do que mudar para clusters direcionados
+05:31
+que atendem jobs individuais ou áreas do job. A maneira mais econômica e flexível de migrar seu sistema Hadoop para o Google Cloud é deixar de pensar em clusters permanentes grandes e multifuncionais
+05:46
+e, em vez disso, pensar em clusters pequenos e de curta duração projetados para executar jobs específicos.
+
+**Exclusão programada** . Um cronômetro pode marcar o tempo após o cluster entrar em um estado ocioso. Com um carimbo de data/hora, a contagem começa assim que a expiração for definida. É possível definir uma duração, o tempo em segundos para esperar antes de desligar automaticamente o cluster. Isso pode variar de no mínimo 10 minutos a no máximo 14 dias com uma granularidade de um segundo. 
+
+## Otimizar modelos e o escalonamento automático do Dataproc
+
+
+**Dataproc Workflow Template** é um arquivo YAML processado por um gráfico acíclico dirigido, ou DAG e pode:
+
+1. Criar um novo cluster, 
+2. Selecionar um cluster existente
+3. Enviar jobs
+4. Reter o envio de jobs até a conclusão de dependências
+5. Excluir um cluster ao final do job.
+
+Ele está disponível pelo comando da **gcloud** e pela **API REST** e não é acessado no console do Cloud (!!!).
+
+
+O Dataproc Workflow Template se torna ativo quando é instanciado no DAG e pode ser enviado muitas vezes com vários valores de parâmetro.
+
+É possível gravar um modelo in-line no comando da gcloud e listar fluxos de trabalho e metadados para ajudar a diagnosticar problemas.
+
+Ex. de Workflow Template:
+```
+# the things we need pip-installed on the cluster
+STARTUP_SCRIPT=gs://${BUCKET}/sparktobq/startup_script.sh
+echo "pip install --upgrade --quiet google-compute-engine google-cloud-storage matplotlib" >
+/tmp/startup_script.sh
+gsutil cp /tmp/startup_script.sh $STARTUP_SCRIPT
+# create new cluster for job
+gcloud dataproc workflow-templates set-managed-cluster $TEMPLATE \
+ --master-machine-type $MACHINE_TYPE \
+ --worker-machine-type $MACHINE_TYPE \
+ --initialization-actions $STARTUP_SCRIPT \
+ --num-workers 2 \
+ --image-version 1.4 \
+ --cluster-name $CLUSTER
+# steps in job
+gcloud dataproc workflow-templates add-job \
+ pyspark gs://$BUCKET/spark_analysis.py \
+ --step-id create-report \
+ --workflow-template $TEMPLATE \
+ -- --bucket=$BUCKET
+
+
+# submit workflow template
+gcloud dataproc workflow-templates instantiate $TEMPLATE
+
+
+```
+Comentários:
+
+- Pegamos o que precisa ser instalado no cluster usando scripts de inicialização e ecoando os comandos de instalação do pip, como vimos aqui, para instalar o matplotlib.
+
+- É possível ter vários scripts de shell de inicialização executados.
+- Vamos usar o comando da gcloud para criar um cluster antes de executar o job.
+- Especificamos parâmetros de cluster como o modelo a ser usado e quais tipos de máquina e versões de imagem queremos.
+- Depois precisamos adicionar um job ao cluster recém-criado.
+- Aqui temos um job do Spark escrito em Python que existe em um bucket que controlamos.
+- Por fim, precisamos enviar este modelo como um novo modelo de fluxo de trabalho.
+
+
+**Escalonamento automático** fornece clusters que se adaptam às necessidades da empresa --> Os jobs não precisam de acompanhamento.
+- Não há necessidade de intervir em um cluster fora da capacidade.
+- É possível escolher entre workers padrão e preemptivos e economizar recursos, cotas e custos a qualquer momento.
+- Políticas de escalonamento automático trazem controle e se baseiam na diferença entre a memória pendente e a disponível do YARN.
+- Se precisar de mais memória, escalone verticalmente.
+- Se precisar de menos, reduza a escala.
+- Obedeça aos limites da VM e use o fator de escalonamento.
+
+O escalonamento automático traz estas melhorias: 
+- Controles ainda mais refinados.
+	- As políticas podem ser modificadas a qualquer momento.
+	- O intervalo mínimo de escalonamento mudou de 10 para 2 minutos.
+	- Elas podem ser compartilhadas entre vários clusters.
+- Está mais fácil entender o escalonamento.
+	- Os painéis YARN e HDFS podem ser visualizados na página do cluster, e o histórico de decisões está disponível no Cloud Logging.
+- A estabilidade é fornecida pela capacidade de escalonar jobs do MapReduce e do Spark sem perder o progresso.
+
+O escalonamento oferece capacidade flexível para uma utilização mais eficiente, com decisões baseadas em métricas do **Hadoop YARN**.
+
+- Ele deve ser usado com dados permanentes fora do cluster, não HDFS ou HBase no cluster.
+- Funciona melhor com clusters que processam muitos jobs ou que processam um único job grande.
+- Ele não é compatível com o Structured Streaming, um serviço criado com base no Spark SQL.
+- Ele não pode ser escalonado para zero e não é bom para clusters sem uso.
+	- Nesses casos, é igualmente rápido encerrar um cluster que está ocioso e criar um novo quando necessário --> Melhor usar **workflow** do Dataproc ou do Cloud Composer e a **exclusão programada**.
+
+Ao trabalhar com escalonamento automático,é importante considerar a definição inicial de workers "**nodes minimum**" --> O cluster vai atingir a capacidade básica mais rapidamente do que com o escalonamento automático.
+	
+O máximo limita o número de nós de trabalho --> Se houver uma carga pesada no cluster, vai haver **escalonamento vertical**.
+
+O escalonamento automático pode exigir vários **períodos de escalonamento**: scale-up factor, cooldown period e scale-down factor.
+ 
+Um número mínimo secundário e um número máximo controlam a escala de workers preemptivos.
