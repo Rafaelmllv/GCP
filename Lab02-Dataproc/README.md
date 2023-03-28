@@ -75,7 +75,7 @@ Como fiz o LAB passado interamente no console, vou fazer algumas partes desses u
 
 Criação do bucket:
 
-![Console](cria-bucket.jpg)
+![Console](criar-bucket.jpg)
 
 OU 
 
