@@ -337,3 +337,41 @@ O máximo limita o número de nós de trabalho --> Se houver uma carga pesada no
 O escalonamento automático pode exigir vários **períodos de escalonamento**: scale-up factor, cooldown period e scale-down factor.
  
 Um número mínimo secundário e um número máximo controlam a escala de workers preemptivos.
+
+
+## Otimizar o monitoramento do Dataproc
+
+- É possível usar o **Cloud Logging** e o **Cloud Monitoring** para visualizar e personalizar registros e monitorar jobs e recursos.
+
+- Para descobrir qual erro causou a falha de job do Spark, examine o endpoint doo driver e os log gerados pelos executores do Spark. 
+
+	- No entanto, se você enviar um job do Spark conectando-se diretamente ao nó primário usando SSH, não será possível ter a saída do driver.
+
+- É possível recuperar a saída do programa de driver no console do Cloud ou usando um comando da gcloud. A saída é armazenada no bucket do Cloud Storage do cluster do Dataproc.
+
+- Outros registros estão em arquivos dentro das máquinas do cluster. 
+	- Veja os registros de cada contêiner na IU da Web do aplicativo Spark ou no servidor de histórico quando o programa termina na guia executável.
+	- Navegue por cada contêiner para visualizar os registros. Se você gravar registros ou imprimir para saída ou erro padrão no código do aplicativo, os registros serão salvos no redirecionamento de saída ou erro.
+
+- No cluster do Dataproc, o YARN é configurado para coletar registros por padrão e eles aparecem no Cloud Logging. 
+
+	- O Logging fornece uma visão consolidada dos registros para que você não perca tempo procurando por erros.
+
+- Na página de geração de registros no console é possível visualizar os registros do cluster escolhendo o nome dos clusters no menu.
+	- Consiga registros de um aplicativo Spark filtrando pelo ID. O ID do aplicativo fica na saída do driver. 
+
+- Para achar registros rapidamente crie e use rótulos para cada cluster ou job.
+Por exemplo, é possível criar um rótulo com o ambiente de chave, ou ENV, como o valor na exploração e usá-lo para seu job de exploração de dados. 
+
+	- Consiga registros de todos os jobs de exploração com o rótulo "ambiente" e uma exploração de valor no Logging. Esse filtro vai retornar apenas os registros de criação de recursos. 
+- Defina o nível de registro do driver usando este comando da gcloud:
+
+`gcloud dataproc jobs submit hadoop --driver-log-levels`
+
+- Defina e o nível de registro do restante do aplicativo pelo contexto do Spark, por exemplo, spark.sparkContext.setLogLevel,("DEBUG")
+
+- O Cloud Monitoring pode monitorar os recursos de CPU, disco, uso de rede e YARN do cluster. Crie um painel personalizado com gráficos atualizados dessas e de outras métricas. 
+
+- O Dataproc é executado no Compute Engine:
+	- Para visualizar o uso da CPU, E/S de disco ou métricas de rede em um gráfico, selecione uma instância de VM do Compute Engine como o tipo de recurso e filtre pelo nome do cluster.
+	- Para ver métricas de consultas, jobs, estágios ou tarefas do Spark, conecte-se à IU da Web dos aplicativos Spark.
